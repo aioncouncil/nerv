@@ -338,14 +338,12 @@ class NERVApp {
         id: pointId,
         x: pos.x,
         y: pos.y,
-        radius: 6,  // Increased radius for visibility
+        radius: 5,
         fill: '#00FFFF',
         stroke: '#FFFFFF',
-        strokeWidth: 2,  // Increased stroke width
-        draggable: false,
-        shadowColor: '#00FFFF',
-        shadowBlur: 12,  // Increased shadow
-        shadowOpacity: 0.8
+        strokeWidth: 2,
+        draggable: false
+        // Removed shadow effects for performance
       });
       
       console.log(`🔵 Point object created: ${point.id()}`);
@@ -387,21 +385,20 @@ class NERVApp {
       // Show visual feedback
       this.showNotification(`Point created: ${labelText} at (${Math.round(pos.x)}, ${Math.round(pos.y)})`, 'success');
       
-      // API call if connected
-      console.log(`📡 API connection status: ${this.isApiConnected ? 'Connected' : 'Disconnected'}`);
-      if (this.isApiConnected) {
-        console.log(`📡 Making API call to create point...`);
-        const apiResult = await this.apiCreatePoint(pos.x, pos.y, pointId);
-        console.log(`📡 API response:`, apiResult);
-      } else {
-        console.log('⚠️ Skipping API call - not connected');
-      }
-      
       console.log(`✅ Point creation completed: ${pointId} at (${pos.x}, ${pos.y})`);
       
       // Update UI counters
       this.updateObjectCount();
       this.updateHistoryDisplay();
+      
+      // API call in background (non-blocking)
+      if (this.isApiConnected) {
+        this.apiCreatePoint(pos.x, pos.y, pointId).then(apiResult => {
+          console.log(`📡 API response:`, apiResult);
+        }).catch(error => {
+          console.log(`📡 API error:`, error);
+        });
+      }
       
     } catch (error) {
       console.error('❌ Failed to create point:', error);
@@ -443,10 +440,7 @@ class NERVApp {
         id: lineId,
         points: [point1.pos.x, point1.pos.y, point2.pos.x, point2.pos.y],
         stroke: '#00FF00',
-        strokeWidth: 2,
-        shadowColor: '#00FF00',
-        shadowBlur: 4,
-        shadowOpacity: 0.4
+        strokeWidth: 2
       });
       
       this.layer.add(line);
@@ -463,16 +457,17 @@ class NERVApp {
         timestamp: Date.now()
       });
       
-      // API call if connected
-      if (this.isApiConnected) {
-        await this.apiCreateLine(point1.id, point2.id, lineId);
-      }
-      
-      this.layer.draw();
+      this.layer.batchDraw();
       console.log(`📏 Line created: ${lineId} between ${point1.id} and ${point2.id}`);
       
-      // Check for achievements
-      await this.checkForNewElements();
+      // API call and achievements check in background (non-blocking)
+      if (this.isApiConnected) {
+        this.apiCreateLine(point1.id, point2.id, lineId).then(() => {
+          return this.checkForNewElements();
+        }).catch(error => {
+          console.log(`📏 Line API error:`, error);
+        });
+      }
       
     } catch (error) {
       console.error('❌ Failed to create line:', error);
@@ -521,10 +516,7 @@ class NERVApp {
         radius: radius,
         stroke: '#FF8000',
         strokeWidth: 2,
-        fill: 'transparent',
-        shadowColor: '#FF8000',
-        shadowBlur: 4,
-        shadowOpacity: 0.3
+        fill: 'transparent'
       });
       
       this.layer.add(circle);
@@ -543,16 +535,17 @@ class NERVApp {
         timestamp: Date.now()
       });
       
-      // API call if connected
-      if (this.isApiConnected) {
-        await this.apiCreateCircle(centerPoint.id, radiusPoint.id, circleId);
-      }
-      
-      this.layer.draw();
+      this.layer.batchDraw();
       console.log(`⭕ Circle created: ${circleId} with center ${centerPoint.id}`);
       
-      // Check for achievements
-      await this.checkForNewElements();
+      // API call and achievements check in background (non-blocking)
+      if (this.isApiConnected) {
+        this.apiCreateCircle(centerPoint.id, radiusPoint.id, circleId).then(() => {
+          return this.checkForNewElements();
+        }).catch(error => {
+          console.log(`⭕ Circle API error:`, error);
+        });
+      }
       
     } catch (error) {
       console.error('❌ Failed to create circle:', error);
