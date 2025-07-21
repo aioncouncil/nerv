@@ -349,8 +349,9 @@ class NERVApp {
       
       console.log(`🔵 Point object created: ${point.id()}`);
       
-      // Add label with simplified text
-      const labelText = pointId.split('_')[1] ? pointId.split('_')[1].toUpperCase().slice(0, 4) : 'P';
+      // Add label with unique identifier
+      const pointCount = Object.keys(this.constructionSpace.points).length + 1;
+      const labelText = `P${pointCount}`;
       const label = new Konva.Text({
         x: pos.x + 10,
         y: pos.y - 10,
