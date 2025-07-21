@@ -634,10 +634,22 @@ class NERVApp {
   }
   
   clearCanvas() {
+    console.log('🧹 Starting canvas clear...');
+    
+    // Get all children before clearing
+    const allNodes = this.layer.children.toArray();
+    console.log(`📊 Found ${allNodes.length} nodes on layer`);
+    
     // Remove all objects except grid
-    this.layer.find('*').forEach(node => {
-      if (node.id() !== 'grid') {
+    allNodes.forEach(node => {
+      const nodeId = node.id();
+      console.log(`🔍 Checking node: ${nodeId || 'no-id'}`);
+      
+      if (nodeId !== 'grid') {
+        console.log(`🗑️ Destroying node: ${nodeId || 'unnamed'}`);
         node.destroy();
+      } else {
+        console.log(`🔒 Keeping grid node`);
       }
     });
     
@@ -649,12 +661,16 @@ class NERVApp {
       history: []
     };
     
-    this.layer.draw();
+    // Force redraw
+    this.layer.batchDraw();
+    
+    console.log(`📊 After clear: ${this.layer.children.length} nodes remaining`);
+    
     this.updateObjectCount();
     this.updateHistoryDisplay();
     
-    console.log('🧹 Canvas cleared');
-    this.showNotification('Canvas cleared', 'info');
+    console.log('✅ Canvas cleared successfully');
+    this.showNotification('Canvas cleared', 'success');
   }
   
   async sendToMagi() {
