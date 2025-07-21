@@ -99,7 +99,8 @@ class NERVApp {
       this.stage.on('mousemove', (e) => this.handleCanvasMove(e));
       this.stage.on('contextmenu', (e) => {
         e.evt.preventDefault();
-        this.handleRightClick(e);
+        // Right-click functionality to be implemented
+        console.log('🖱️ Right click detected');
       });
       
       
@@ -637,7 +638,7 @@ class NERVApp {
     console.log('🧹 Starting canvas clear...');
     
     // Get all children before clearing
-    const allNodes = this.layer.children.toArray();
+    const allNodes = this.layer.getChildren();
     console.log(`📊 Found ${allNodes.length} nodes on layer`);
     
     // Remove all objects except grid
