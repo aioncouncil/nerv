@@ -663,6 +663,13 @@ class NERVApp {
       history: []
     };
     
+    // Alternative aggressive clear method if needed
+    console.log('🔄 Attempting alternative clear method...');
+    this.layer.destroyChildren();
+    
+    // Recreate grid after aggressive clear
+    this.addGrid();
+    
     // Force redraw
     this.layer.batchDraw();
     
