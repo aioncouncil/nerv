@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>NERV - Neural Euclidean Reconstruction Vessel</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Courier New', monospace; }
+    body { background: #000; color: #0f0; height: 100vh; overflow: hidden; }
+    
+    .container { display: grid; grid-template-columns: 200px 1fr 300px; height: 100vh; gap: 2px; }
+    
+    .toolbar { 
+      background: #111; border-right: 1px solid #0f0; padding: 10px;
+      overflow-y: auto;
+    }
+    
+    .canvas-area { 
+      background: #000; position: relative;
+      border: 1px solid #0f0;
+    }
+    
+    .side-panel { 
+      background: #111; border-left: 1px solid #0f0; padding: 10px;
+      overflow-y: auto;
+    }
+    
+    .tool-btn {
+      width: 100%; padding: 8px; margin: 2px 0; background: #222; 
+      border: 1px solid #0f0; color: #0f0; cursor: pointer;
+      font-family: inherit;
+    }
+    .tool-btn:hover { background: #333; }
+    .tool-btn.active { background: #0f0; color: #000; }
+    
+    #canvas { width: 100%; height: 100%; background: #111; }
+    
+    .status { position: absolute; bottom: 0; left: 0; right: 0; 
+      background: rgba(0,0,0,0.8); padding: 5px; font-size: 12px; }
+    
+    .magi-chat { height: 200px; overflow-y: auto; background: #000; 
+      border: 1px solid #0f0; margin-bottom: 10px; padding: 5px; }
+    
+    .magi-input { width: 100%; padding: 5px; background: #111; 
+      border: 1px solid #0f0; color: #0f0; font-family: inherit; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <h3>🎯 TOOLS</h3>
+      <button class="tool-btn active" data-tool="point">📍 Point</button>
+      <button class="tool-btn" data-tool="line">📏 Line</button>
+      <button class="tool-btn" data-tool="circle">⭕ Circle</button>
+      <button class="tool-btn" data-tool="clear">🗑️ Clear</button>
+      
+      <h3 style="margin-top: 20px;">📊 STATUS</h3>
+      <div id="point-count">Points: 0</div>
+      <div id="api-status">API: Connecting...</div>
+    </div>
+    
+    <!-- Canvas Area -->
+    <div class="canvas-area">
+      <canvas id="canvas"></canvas>
+      <div class="status" id="status">Ready - Click to place points</div>
+    </div>
+    
+    <!-- Side Panel -->
+    <div class="side-panel">
+      <h3>🤖 MAGI AI</h3>
+      <div class="magi-chat" id="magi-chat">
+        <div style="color: #666;">CASPER AI ready...</div>
+      </div>
+      <input type="text" class="magi-input" id="magi-input" placeholder="Ask MAGI for help...">
+      
+      <h3 style="margin-top: 20px;">📚 COLLECTION</h3>
+      <div id="collection-info">Loading...</div>
+    </div>
+  </div>
+
+  <script>
+    class SimpleNERV {
+      constructor() {
+        this.apiUrl = 'http://localhost:8001/api/v1';
+        this.currentTool = 'point';
+        this.points = [];
+        this.canvas = document.getElementById('canvas');
+        this.ctx = this.canvas.getContext('2d');
+        
+        this.init();
+      }
+      
+      init() {
+        this.setupCanvas();
+        this.setupEventListeners();
+        this.testAPI();
+      }
+      
+      setupCanvas() {
+        // Size canvas to fit container
+        const resize = () => {
+          const rect = this.canvas.parentElement.getBoundingClientRect();
+          this.canvas.width = rect.width - 4;
+          this.canvas.height = rect.height - 30; // Leave room for status
+          this.drawGrid();
+          this.redraw();
+        };
+        
+        resize();
+        window.addEventListener('resize', resize);
+        
+        // Canvas click handler
+        this.canvas.addEventListener('click', (e) => this.handleClick(e));
+      }
+      
+      setupEventListeners() {
+        // Tool buttons
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            this.selectTool(e.target.dataset.tool);
+          });
+        });
+        
+        // MAGI input
+        document.getElementById('magi-input').addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') this.askMAGI();
+        });
+      }
+      
+      selectTool(tool) {
+        this.currentTool = tool;
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.tool === tool);
+        });
+        document.getElementById('status').textContent = `Tool: ${tool.toUpperCase()}`;
+      }
+      
+      handleClick(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        console.log(`🖱️ Canvas clicked at (${x}, ${y}), current tool: ${this.currentTool}`);
+        
+        if (this.currentTool === 'point') {
+          this.addPoint(x, y);
+        } else if (this.currentTool === 'clear') {
+          this.clearCanvas();
+        }
+      }
+      
+      addPoint(x, y) {
+        console.log(`🎯 Adding point at (${x}, ${y})`);
+        const label = `P${this.points.length + 1}`;
+        this.points.push({x, y, label});
+        
+        this.drawPoint(x, y, label);
+        this.updateStatus();
+        
+        // API call to backend
+        console.log('📡 Making API call to create point...');
+        this.callAPI('/geometry/points', {
+          method: 'POST',
+          body: JSON.stringify({
+            point_data: {x, y, label},
+            construction_space_data: {points: {}, lines: {}, circles: {}, history: []}
+          })
+        }).then(data => {
+          console.log('✅ Point added to API:', data);
+          document.getElementById('api-status').textContent = 'API: Connected';
+          
+          // Update the point with the backend-generated ID if available
+          if (data.created_id) {
+            const lastPoint = this.points[this.points.length - 1];
+            lastPoint.backend_id = data.created_id;
+            console.log(`🔗 Point linked with backend ID: ${data.created_id}`);
+          }
+        }).catch(e => {
+          console.error('❌ API Error:', e);
+          document.getElementById('api-status').textContent = 'API: Error';
+        });
+      }
+      
+      drawGrid() {
+        this.ctx.strokeStyle = '#333';
+        this.ctx.lineWidth = 0.5;
+        
+        const gridSize = 20;
+        for (let x = 0; x <= this.canvas.width; x += gridSize) {
+          this.ctx.beginPath();
+          this.ctx.moveTo(x, 0);
+          this.ctx.lineTo(x, this.canvas.height);
+          this.ctx.stroke();
+        }
+        for (let y = 0; y <= this.canvas.height; y += gridSize) {
+          this.ctx.beginPath();
+          this.ctx.moveTo(0, y);
+          this.ctx.lineTo(this.canvas.width, y);
+          this.ctx.stroke();
+        }
+      }
+      
+      drawPoint(x, y, label) {
+        this.ctx.fillStyle = '#0f0';
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, 5, 0, 2 * Math.PI);
+        this.ctx.fill();
+        
+        this.ctx.fillStyle = '#fff';
+        this.ctx.font = '12px Courier New';
+        this.ctx.fillText(label, x + 8, y - 8);
+      }
+      
+      redraw() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.drawGrid();
+        this.points.forEach(p => this.drawPoint(p.x, p.y, p.label));
+      }
+      
+      clearCanvas() {
+        this.points = [];
+        this.redraw();
+        this.updateStatus();
+      }
+      
+      updateStatus() {
+        document.getElementById('point-count').textContent = `Points: ${this.points.length}`;
+      }
+      
+      async askMAGI() {
+        const input = document.getElementById('magi-input');
+        const question = input.value.trim();
+        if (!question) return;
+        
+        const chat = document.getElementById('magi-chat');
+        chat.innerHTML += `<div style="color: #0f0;">You: ${question}</div>`;
+        input.value = '';
+        
+        try {
+          const response = await this.callAPI('/magi/query', {
+            method: 'POST',
+            body: JSON.stringify({
+              query_type: 'construction_help',
+              content: question,
+              difficulty_level: 'beginner'
+            })
+          });
+          
+          chat.innerHTML += `<div style="color: #ff0;">MAGI: ${response.content}</div>`;
+          chat.scrollTop = chat.scrollHeight;
+          
+        } catch (error) {
+          chat.innerHTML += `<div style="color: #f00;">Error: ${error.message}</div>`;
+        }
+      }
+      
+      async testAPI() {
+        try {
+          // Health endpoint is at root, not under /api/v1
+          const healthResponse = await fetch('http://localhost:8001/health');
+          const health = await healthResponse.json();
+          console.log('✅ API Health:', health);
+          document.getElementById('api-status').textContent = 'API: Connected';
+          
+          // Load collection using proper API path
+          const collection = await this.callAPI('/collection/player/default_player');
+          document.getElementById('collection-info').innerHTML = 
+            `Elements: ${collection.collection.total_elements}<br>Level: ${collection.collection.current_level}`;
+            
+        } catch (error) {
+          console.log('❌ API Test failed:', error);
+          document.getElementById('api-status').textContent = 'API: Offline';
+        }
+      }
+      
+      async callAPI(endpoint, options = {}) {
+        const url = this.apiUrl + endpoint;
+        const config = {
+          headers: { 'Content-Type': 'application/json' },
+          ...options
+        };
+        
+        console.log(`📡 API Call: ${options.method || 'GET'} ${url}`);
+        
+        try {
+          const response = await fetch(url, config);
+          console.log(`📡 API Response: ${response.status} ${response.statusText}`);
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`❌ API Error Response: ${errorText}`);
+            throw new Error(`API Error: ${response.status} - ${errorText}`);
+          }
+          
+          const data = await response.json();
+          console.log('📡 API Data:', data);
+          return data;
+        } catch (error) {
+          console.error('📡 API Call failed:', error);
+          throw error;
+        }
+      }
+    }
+    
+    // Initialize when page loads
+    window.addEventListener('DOMContentLoaded', () => {
+      window.nerv = new SimpleNERV();
+    });
+  </script>
+</body>
+</html>

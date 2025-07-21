@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Konva Test</title>
+    <script src="lib/konva.min.js"></script>
+    <style>
+        body { margin: 0; padding: 20px; background: #222; color: white; font-family: Arial; }
+        #container { width: 600px; height: 400px; background: #444; border: 2px solid #666; }
+        .debug { margin: 10px 0; padding: 10px; background: #333; border: 1px solid #555; }
+    </style>
+</head>
+<body>
+    <h1>Konva Canvas Test</h1>
+    <div class="debug" id="debug"></div>
+    <div id="container"></div>
+    
+    <script>
+        const debug = document.getElementById('debug');
+        
+        function log(message) {
+            debug.innerHTML += message + '<br>';
+            console.log(message);
+        }
+        
+        try {
+            log('🚀 Testing Konva initialization...');
+            log('Konva version: ' + Konva.version);
+            
+            // Create stage
+            const stage = new Konva.Stage({
+                container: 'container',
+                width: 600,
+                height: 400,
+            });
+            
+            log('✅ Stage created: ' + stage.width() + 'x' + stage.height());
+            
+            // Create layer
+            const layer = new Konva.Layer();
+            stage.add(layer);
+            
+            log('✅ Layer created and added');
+            
+            // Add test circle
+            const circle = new Konva.Circle({
+                x: 100,
+                y: 100,
+                radius: 20,
+                fill: 'cyan',
+                stroke: 'white',
+                strokeWidth: 2
+            });
+            
+            layer.add(circle);
+            layer.draw();
+            
+            log('✅ Test circle added - should be visible');
+            
+            // Add click handler
+            stage.on('click', function(e) {
+                const pos = stage.getPointerPosition();
+                log('🖱️ Click at: ' + pos.x + ', ' + pos.y);
+                
+                const newCircle = new Konva.Circle({
+                    x: pos.x,
+                    y: pos.y,
+                    radius: 8,
+                    fill: 'lime',
+                    stroke: 'white',
+                    strokeWidth: 1
+                });
+                
+                layer.add(newCircle);
+                layer.draw();
+                
+                log('✅ New circle added at click position');
+            });
+            
+            log('🖱️ Click anywhere in the canvas to add circles');
+            
+        } catch (error) {
+            log('❌ Error: ' + error.message);
+            log('❌ Stack: ' + error.stack);
+        }
+    </script>
+</body>
+</html>

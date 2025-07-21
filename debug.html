@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NERV Debug</title>
+</head>
+<body>
+    <h1>NERV Debug Page</h1>
+    <div id="debug-output"></div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/konva/9.2.0/konva.min.js"></script>
+    <script>
+        console.log('Debug page loaded');
+        
+        // Test if Konva loaded
+        if (typeof Konva !== 'undefined') {
+            console.log('✅ Konva loaded successfully');
+            document.getElementById('debug-output').innerHTML += '<p>✅ Konva loaded</p>';
+        } else {
+            console.log('❌ Konva failed to load');
+            document.getElementById('debug-output').innerHTML += '<p>❌ Konva failed to load</p>';
+        }
+        
+        // Test API connection
+        fetch('http://localhost:8001/api/v1/geometry/health')
+            .then(response => response.json())
+            .then(data => {
+                console.log('✅ API connection successful:', data);
+                document.getElementById('debug-output').innerHTML += '<p>✅ API connected: ' + JSON.stringify(data) + '</p>';
+            })
+            .catch(error => {
+                console.log('❌ API connection failed:', error);
+                document.getElementById('debug-output').innerHTML += '<p>❌ API failed: ' + error + '</p>';
+            });
+    </script>
+</body>
+</html>

@@ -584,7 +584,7 @@
 
     <!-- Main Canvas -->
     <div class="canvas-container">
-      <div id="geometryCanvas"></div>
+      <canvas id="geometryCanvas"></canvas>
       <div class="canvas-overlay">
         <div class="canvas-info">
           Tool: <span id="current-tool">POINT</span> | 
@@ -630,7 +630,7 @@
     <footer>
       <div class="command-line">
         <span class="command-prompt">NERV></span>
-        <input type="text" class="command-input" id="command-input" placeholder="Enter command...">
+        <input type="text" class="command-input" id="command-input" placeholder="Enter command..." onkeypress="handleCommand(event)">
       </div>
       <div class="api-status">
         <span>API: </span>
@@ -640,8 +640,7 @@
     </footer>
   </div>
 
-  <script src="lib/konva.min.js"></script>
-  <script src="js/canvas-fallback.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/konva/9.2.0/konva.min.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
