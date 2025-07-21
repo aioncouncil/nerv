@@ -102,20 +102,6 @@ class NERVApp {
         this.handleRightClick(e);
       });
       
-      // Test point to verify canvas is working
-      const testPoint = new Konva.Circle({
-        x: 50,
-        y: 50,
-        radius: 8,
-        fill: 'red',
-        stroke: 'white',
-        strokeWidth: 2
-      });
-      
-      this.layer.add(testPoint);
-      this.layer.draw();
-      
-      console.log('🔴 Test point added to verify canvas functionality');
       
       // Resize handler
       window.addEventListener('resize', () => this.resizeCanvas());
@@ -157,26 +143,26 @@ class NERVApp {
   addGrid() {
     const width = this.stage.width();
     const height = this.stage.height();
-    const gridSize = 20;
+    const majorGridSize = 40;  // Fewer, larger grid squares
     
     const gridGroup = new Konva.Group({ id: 'grid' });
     
-    // Vertical lines
-    for (let x = 0; x <= width; x += gridSize) {
+    // Major vertical lines only
+    for (let x = 0; x <= width; x += majorGridSize) {
       gridGroup.add(new Konva.Line({
         points: [x, 0, x, height],
-        stroke: 'rgba(0, 255, 255, 0.1)',
-        strokeWidth: x % (gridSize * 5) === 0 ? 0.8 : 0.3,
+        stroke: 'rgba(0, 255, 255, 0.15)',
+        strokeWidth: 0.5,
         listening: false
       }));
     }
     
-    // Horizontal lines
-    for (let y = 0; y <= height; y += gridSize) {
+    // Major horizontal lines only  
+    for (let y = 0; y <= height; y += majorGridSize) {
       gridGroup.add(new Konva.Line({
         points: [0, y, width, y],
-        stroke: 'rgba(0, 255, 255, 0.1)',
-        strokeWidth: y % (gridSize * 5) === 0 ? 0.8 : 0.3,
+        stroke: 'rgba(0, 255, 255, 0.15)',
+        strokeWidth: 0.5,
         listening: false
       }));
     }
