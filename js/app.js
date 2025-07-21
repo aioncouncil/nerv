@@ -573,33 +573,36 @@ class NERVApp {
   }
   
   updateTempLine() {
-    this.clearTempObjects();
-    
     if (this.drawingState.startPoint) {
       const pos = this.stage.getPointerPosition();
-      const tempLine = new Konva.Line({
-        id: 'temp_line',
-        points: [
-          this.drawingState.startPoint.pos.x, 
-          this.drawingState.startPoint.pos.y, 
-          pos.x, 
-          pos.y
-        ],
-        stroke: 'rgba(0, 255, 0, 0.5)',
-        strokeWidth: 2,
-        dash: [5, 5],
-        listening: false
-      });
       
-      this.layer.add(tempLine);
-      this.drawingState.tempObjects.push(tempLine);
-      this.layer.draw();
+      // Reuse existing temp line or create new one
+      let tempLine = this.layer.findOne('#temp_line');
+      if (!tempLine) {
+        tempLine = new Konva.Line({
+          id: 'temp_line',
+          stroke: 'rgba(0, 255, 0, 0.5)',
+          strokeWidth: 1,
+          dash: [3, 3],
+          listening: false
+        });
+        this.layer.add(tempLine);
+        this.drawingState.tempObjects.push(tempLine);
+      }
+      
+      // Update points without recreating object
+      tempLine.points([
+        this.drawingState.startPoint.pos.x, 
+        this.drawingState.startPoint.pos.y, 
+        pos.x, 
+        pos.y
+      ]);
+      
+      this.layer.batchDraw(); // More efficient than draw()
     }
   }
   
   updateTempCircle() {
-    this.clearTempObjects();
-    
     if (this.drawingState.startPoint) {
       const pos = this.stage.getPointerPosition();
       const radius = Math.sqrt(
@@ -607,21 +610,27 @@ class NERVApp {
         Math.pow(pos.y - this.drawingState.startPoint.pos.y, 2)
       );
       
-      const tempCircle = new Konva.Circle({
-        id: 'temp_circle',
-        x: this.drawingState.startPoint.pos.x,
-        y: this.drawingState.startPoint.pos.y,
-        radius: radius,
-        stroke: 'rgba(255, 128, 0, 0.5)',
-        strokeWidth: 2,
-        dash: [5, 5],
-        fill: 'transparent',
-        listening: false
-      });
+      // Reuse existing temp circle or create new one
+      let tempCircle = this.layer.findOne('#temp_circle');
+      if (!tempCircle) {
+        tempCircle = new Konva.Circle({
+          id: 'temp_circle',
+          x: this.drawingState.startPoint.pos.x,
+          y: this.drawingState.startPoint.pos.y,
+          stroke: 'rgba(255, 128, 0, 0.5)',
+          strokeWidth: 1,
+          dash: [3, 3],
+          fill: 'transparent',
+          listening: false
+        });
+        this.layer.add(tempCircle);
+        this.drawingState.tempObjects.push(tempCircle);
+      }
       
-      this.layer.add(tempCircle);
-      this.drawingState.tempObjects.push(tempCircle);
-      this.layer.draw();
+      // Update radius without recreating object
+      tempCircle.radius(radius);
+      
+      this.layer.batchDraw(); // More efficient than draw()
     }
   }
   
