@@ -555,6 +555,171 @@ class NERVApp {
     }
   }
   
+  async findIntersectionsAt(pos) {
+    console.log(`🔍 Looking for intersections at (${pos.x}, ${pos.y})`);
+    
+    try {
+      const intersections = this.calculateIntersections(pos);
+      
+      if (intersections.length === 0) {
+        this.showNotification('No intersections found at this location', 'info');
+        return;
+      }
+      
+      // Create points at each intersection
+      for (const intersection of intersections) {
+        await this.createPoint(intersection);
+      }
+      
+      this.showNotification(`Found ${intersections.length} intersection(s)`, 'success');
+      
+    } catch (error) {
+      console.error('❌ Failed to find intersections:', error);
+      this.showNotification('Failed to find intersections', 'error');
+    }
+  }
+  
+  calculateIntersections(clickPos) {
+    const intersections = [];
+    const tolerance = 20; // Click tolerance
+    
+    // Get all lines and circles
+    const lines = Object.keys(this.constructionSpace.lines);
+    const circles = Object.keys(this.constructionSpace.circles);
+    
+    // Check line-line intersections
+    for (let i = 0; i < lines.length; i++) {
+      for (let j = i + 1; j < lines.length; j++) {
+        const intersection = this.calculateLineLineIntersection(lines[i], lines[j]);
+        if (intersection && this.isNearClick(intersection, clickPos, tolerance)) {
+          intersections.push(intersection);
+        }
+      }
+    }
+    
+    // Check line-circle intersections
+    for (const lineId of lines) {
+      for (const circleId of circles) {
+        const lineCircleIntersections = this.calculateLineCircleIntersection(lineId, circleId);
+        for (const intersection of lineCircleIntersections) {
+          if (intersection && this.isNearClick(intersection, clickPos, tolerance)) {
+            intersections.push(intersection);
+          }
+        }
+      }
+    }
+    
+    // Check circle-circle intersections
+    for (let i = 0; i < circles.length; i++) {
+      for (let j = i + 1; j < circles.length; j++) {
+        const circleIntersections = this.calculateCircleCircleIntersection(circles[i], circles[j]);
+        for (const intersection of circleIntersections) {
+          if (intersection && this.isNearClick(intersection, clickPos, tolerance)) {
+            intersections.push(intersection);
+          }
+        }
+      }
+    }
+    
+    return intersections;
+  }
+  
+  calculateLineLineIntersection(lineId1, lineId2) {
+    const line1 = this.constructionSpace.lines[lineId1];
+    const line2 = this.constructionSpace.lines[lineId2];
+    
+    const p1 = this.constructionSpace.points[line1.point1];
+    const p2 = this.constructionSpace.points[line1.point2];
+    const p3 = this.constructionSpace.points[line2.point1];
+    const p4 = this.constructionSpace.points[line2.point2];
+    
+    const denominator = (p1.x - p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x - p4.x);
+    
+    if (Math.abs(denominator) < 1e-10) {
+      return null; // Lines are parallel
+    }
+    
+    const t = ((p1.x - p3.x) * (p3.y - p4.y) - (p1.y - p3.y) * (p3.x - p4.x)) / denominator;
+    
+    return {
+      x: p1.x + t * (p2.x - p1.x),
+      y: p1.y + t * (p2.y - p1.y)
+    };
+  }
+  
+  calculateLineCircleIntersection(lineId, circleId) {
+    // Simplified implementation - could be expanded for full line-circle intersection
+    const line = this.constructionSpace.lines[lineId];
+    const circle = this.constructionSpace.circles[circleId];
+    
+    // For now, return empty array - full implementation would require more complex math
+    return [];
+  }
+  
+  calculateCircleCircleIntersection(circleId1, circleId2) {
+    const circle1 = this.constructionSpace.circles[circleId1];
+    const circle2 = this.constructionSpace.circles[circleId2];
+    
+    const center1 = this.constructionSpace.points[circle1.center];
+    const center2 = this.constructionSpace.points[circle2.center];
+    
+    const dx = center2.x - center1.x;
+    const dy = center2.y - center1.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    const r1 = circle1.radius;
+    const r2 = circle2.radius;
+    
+    // Check if circles intersect
+    if (distance > r1 + r2 || distance < Math.abs(r1 - r2) || distance === 0) {
+      return []; // No intersection
+    }
+    
+    const a = (r1 * r1 - r2 * r2 + distance * distance) / (2 * distance);
+    const h = Math.sqrt(r1 * r1 - a * a);
+    
+    const cx = center1.x + a * dx / distance;
+    const cy = center1.y + a * dy / distance;
+    
+    return [
+      { x: cx + h * dy / distance, y: cy - h * dx / distance },
+      { x: cx - h * dy / distance, y: cy + h * dx / distance }
+    ];
+  }
+  
+  isNearClick(point, clickPos, tolerance) {
+    const dx = point.x - clickPos.x;
+    const dy = point.y - clickPos.y;
+    return Math.sqrt(dx * dx + dy * dy) <= tolerance;
+  }
+  
+  measureDistance(pos) {
+    console.log(`📏 Measuring distance at (${pos.x}, ${pos.y})`);
+    
+    const nearPoint = this.findNearbyPoint(pos);
+    if (!nearPoint) {
+      this.showNotification('Click on a point to start measuring', 'info');
+      return;
+    }
+    
+    if (!this.measureStart) {
+      this.measureStart = nearPoint;
+      this.showNotification(`Measurement started at ${nearPoint.id.split('_')[0]}`, 'info');
+    } else {
+      const distance = Math.sqrt(
+        Math.pow(nearPoint.pos.x - this.measureStart.pos.x, 2) + 
+        Math.pow(nearPoint.pos.y - this.measureStart.pos.y, 2)
+      );
+      
+      this.showNotification(
+        `Distance: ${Math.round(distance)}px from ${this.measureStart.id.split('_')[0]} to ${nearPoint.id.split('_')[0]}`, 
+        'success'
+      );
+      
+      this.measureStart = null; // Reset for next measurement
+    }
+  }
+  
   findNearbyPoint(pos) {
     for (const [pointId, point] of Object.entries(this.constructionSpace.points)) {
       const distance = Math.sqrt(
