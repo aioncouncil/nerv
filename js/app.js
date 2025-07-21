@@ -1060,10 +1060,53 @@ class NERVApp {
     
     this.constructionSpace.history.slice(-10).reverse().forEach(entry => {
       const historyDiv = document.createElement('div');
-      historyDiv.style.cssText = 'margin: 2px 0; padding: 2px; border-left: 2px solid #00FFFF;';
-      historyDiv.textContent = `${entry.action.replace('_', ' ')} - ${entry.id}`;
+      historyDiv.style.cssText = 'margin: 3px 0; padding: 4px 6px; border-left: 3px solid; border-radius: 2px; background: rgba(0,0,0,0.2); font-size: 0.7rem; line-height: 1.2;';
+      
+      // Generate descriptive text and colors based on action type
+      let description, borderColor;
+      
+      switch (entry.action) {
+        case 'add_point':
+          description = `Point ${this.getPointLabel(entry.id)} at (${Math.round(entry.position.x)}, ${Math.round(entry.position.y)})`;
+          borderColor = '#00FFFF';
+          break;
+          
+        case 'create_line':
+          const point1Label = this.getPointLabel(entry.points[0]);
+          const point2Label = this.getPointLabel(entry.points[1]);
+          description = `Line from ${point1Label} to ${point2Label}`;
+          borderColor = '#00FF00';
+          break;
+          
+        case 'create_circle':
+          const centerLabel = this.getPointLabel(entry.center);
+          const radiusLabel = this.getPointLabel(entry.radiusPoint);
+          description = `Circle centered at ${centerLabel}, radius to ${radiusLabel}`;
+          borderColor = '#FF8000';
+          break;
+          
+        default:
+          description = `${entry.action.replace('_', ' ')} - ${entry.id}`;
+          borderColor = '#666666';
+      }
+      
+      historyDiv.style.borderLeftColor = borderColor;
+      historyDiv.innerHTML = `
+        <div style="font-weight: bold; color: ${borderColor};">${description}</div>
+        <div style="color: #999; font-size: 0.6rem; margin-top: 1px;">
+          ${new Date(entry.timestamp).toLocaleTimeString()}
+        </div>
+      `;
+      
       historyContainer.appendChild(historyDiv);
     });
+  }
+  
+  getPointLabel(pointId) {
+    // Extract the point number from our construction space
+    const pointIds = Object.keys(this.constructionSpace.points);
+    const index = pointIds.indexOf(pointId);
+    return index >= 0 ? `P${index + 1}` : pointId.split('_')[0];
   }
   
   showNotification(message, type = 'info') {
