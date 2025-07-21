@@ -1,0 +1,77 @@
+{
+  "name": "nerv-euclidean-pokedex",
+  "version": "0.1.0",
+  "description": "Industrial-grade gamified Euclidean geometry construction system",
+  "main": "frontend/src/index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:api\" \"npm run dev:rust\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:api": "cd backend/python-api && python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000",
+    "dev:rust": "cd backend/rust-core && cargo watch -x 'run --bin server'",
+    "build": "npm run build:frontend && npm run build:rust && npm run build:wasm",
+    "build:frontend": "cd frontend && npm run build",
+    "build:rust": "cd backend/rust-core && cargo build --release",
+    "build:wasm": "cd backend/rust-core && wasm-pack build --target web --out-dir ../../frontend/src/wasm",
+    "test": "npm run test:frontend && npm run test:rust && npm run test:python",
+    "test:frontend": "cd frontend && npm test",
+    "test:rust": "cd backend/rust-core && cargo test",
+    "test:python": "cd backend/python-api && python -m pytest",
+    "lint": "npm run lint:frontend && npm run lint:rust && npm run lint:python",
+    "lint:frontend": "cd frontend && npm run lint",
+    "lint:rust": "cd backend/rust-core && cargo clippy",
+    "lint:python": "cd backend/python-api && flake8 . && black --check .",
+    "format": "npm run format:frontend && npm run format:rust && npm run format:python",
+    "format:frontend": "cd frontend && npm run format",
+    "format:rust": "cd backend/rust-core && cargo fmt",
+    "format:python": "cd backend/python-api && black .",
+    "docker:dev": "docker-compose --profile dev up",
+    "docker:build": "docker-compose --profile build up",
+    "docker:prod": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "db:setup": "docker-compose up -d postgres neo4j redis",
+    "db:migrate": "cd backend/python-api && alembic upgrade head",
+    "db:seed": "cd backend/database && python seed_data.py",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend/python-api && pip install -r requirements.txt"
+  },
+  "keywords": [
+    "geometry",
+    "euclidean",
+    "gamification",
+    "education",
+    "rust",
+    "python",
+    "webassembly",
+    "graph-database"
+  ],
+  "author": "Alexander Hoduski",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0"
+  },
+  "lint-staged": {
+    "frontend/**/*.{js,jsx,ts,tsx}": [
+      "cd frontend && npm run lint:fix",
+      "cd frontend && npm run format"
+    ],
+    "backend/rust-core/**/*.rs": [
+      "cd backend/rust-core && cargo fmt",
+      "cd backend/rust-core && cargo clippy --fix"
+    ],
+    "backend/python-api/**/*.py": [
+      "cd backend/python-api && black",
+      "cd backend/python-api && flake8"
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged",
+      "pre-push": "npm test"
+    }
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

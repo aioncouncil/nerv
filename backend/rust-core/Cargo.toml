@@ -1,0 +1,83 @@
+[package]
+name = "nerv-geometry"
+version = "0.1.0"
+edition = "2021"
+authors = ["Alexander Hoduski <alex@example.com>"]
+description = "High-performance geometric calculation engine for NERV"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+# Server binary - will be added later
+# [[bin]]
+# name = "server"
+# path = "src/bin/server.rs"
+
+[dependencies]
+# Core geometric calculations
+nalgebra = { version = "0.32", features = ["serde-serialize"] }
+parry2d = "0.13"
+geo = "0.27"
+euclid = "0.22"
+
+# WebAssembly support
+wasm-bindgen = "0.2"
+js-sys = "0.3"
+web-sys = "0.3"
+console_error_panic_hook = { version = "0.1", optional = true }
+wee_alloc = { version = "0.4", optional = true }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde-wasm-bindgen = "0.6"
+
+# Python bindings
+pyo3 = { version = "0.20", features = ["extension-module"], optional = true }
+
+# Graph operations
+petgraph = "0.6"
+neo4rs = { version = "0.7", optional = true }
+
+# Performance and utilities
+rayon = "1.8"
+thiserror = "1.0"
+uuid = { version = "1.6", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Server components (optional)
+tokio = { version = "1.0", features = ["full"], optional = true }
+axum = { version = "0.7", optional = true }
+tower = { version = "0.4", optional = true }
+tower-http = { version = "0.5", features = ["cors"], optional = true }
+
+# Logging
+log = "0.4"
+env_logger = "0.10"
+
+[dev-dependencies]
+criterion = "0.5"
+quickcheck = "1.0"
+approx = "0.5"
+
+[features]
+default = ["console_error_panic_hook"]
+python = ["pyo3"]
+server = ["tokio", "axum", "tower", "tower-http", "neo4rs"]
+wee_alloc = ["dep:wee_alloc"]
+
+[profile.release]
+# Optimize for size and speed
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[profile.dev.package."*"]
+opt-level = 2
+
+# Benchmarks will be added later
+# [[bench]]
+# name = "geometry_benchmarks"
+# harness = false
