@@ -644,13 +644,14 @@ class NERVApp {
     // Remove all objects except grid
     allNodes.forEach(node => {
       const nodeId = node.id();
-      console.log(`🔍 Checking node: ${nodeId || 'no-id'}`);
+      console.log(`🔍 Checking node: ${nodeId || 'no-id'} (type: ${node.getClassName()})`);
       
-      if (nodeId !== 'grid') {
-        console.log(`🗑️ Destroying node: ${nodeId || 'unnamed'}`);
-        node.destroy();
-      } else {
+      // Keep grid, destroy everything else (including nodes without IDs)
+      if (nodeId === 'grid') {
         console.log(`🔒 Keeping grid node`);
+      } else {
+        console.log(`🗑️ Destroying node: ${nodeId || 'unnamed'} (${node.getClassName()})`);
+        node.destroy();
       }
     });
     
